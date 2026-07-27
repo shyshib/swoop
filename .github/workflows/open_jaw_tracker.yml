@@ -25,7 +25,10 @@ jobs:
         run: pip install .
 
       - name: Check Open Jaw price
-        run: python open_jaw_tracker.py | tee price.txt
+        run: |
+          python open_jaw_tracker.py > price.txt
+          cat price.txt
+          test -s price.txt
 
       - name: Send email
         env:
@@ -38,7 +41,10 @@ jobs:
           from pathlib import Path
 
           email_address = "shyshib@gmail.com"
-          body = Path("price.txt").read_text(encoding="utf-8")
+          body = Path("price.txt").read_text(encoding="utf-8").strip()
+
+          if not body:
+              raise RuntimeError("price.txt is empty")
 
           message = EmailMessage()
           message["Subject"] = "Daily Open Jaw flight price"
