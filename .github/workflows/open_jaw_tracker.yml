@@ -53,9 +53,6 @@ jobs:
           message.set_content(body)
 
           with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-              smtp.login(
-                  email_address,
-                  os.environ["GMAIL_APP_PASSWORD"]
-              )
+              smtp.login(email_address, os.environ["GMAIL_APP_PASSWORD"])
               smtp.send_message(message)
           PY
