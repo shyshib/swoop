@@ -1,4 +1,10 @@
-from swoop import SearchLeg, SORT_CHEAPEST, search_legs
+from swoop import (
+    Passengers,
+    SearchLeg,
+    SORT_CHEAPEST,
+    TransportConfig,
+    search_legs,
+)
 
 results = search_legs(
     [
@@ -15,22 +21,31 @@ results = search_legs(
             max_stops=1,
         ),
     ],
-    adults=2,
-    children=0,
+    passengers=Passengers(
+        adults=2,
+        children=0,
+    ),
     cabin="economy",
     sort=SORT_CHEAPEST,
-    country="IL",
-    retries=3,
+    transport=TransportConfig(
+        country="IL",
+        retries=3,
+    ),
 )
 
 if not results.results:
     raise RuntimeError("No matching Open Jaw results were found.")
 
-cheapest = results.results[0]
+valid_results = [item for item in results.results if item.price is not None]
+
+if not valid_results:
+    raise RuntimeError("Results were found, but no prices were returned.")
+
+cheapest = min(valid_results, key=lambda item: item.price)
 currency = cheapest.currency or results.currency or ""
 
 print(f"Cheapest total price: {cheapest.price} {currency}")
-print("Route: TLV → KIX | NRT → TLV")
-print("Dates: 3 April 2027 → 22 April 2027")
+print("Route: TLV -> KIX | NRT -> TLV")
+print("Dates: 3 April 2027 -> 22 April 2027")
 print("Travellers: 2 adults")
-print("Maximum stops: 1 per flight")
+print("Maximum stops: 1 per direction")
