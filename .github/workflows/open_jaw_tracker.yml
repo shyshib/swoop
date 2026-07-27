@@ -1,58 +1,62 @@
-name: Open Jaw Price Tracker
+from swoop import (
+    Passengers,
+    SearchLeg,
+    SORT_CHEAPEST,
+    TransportConfig,
+    search_legs,
+)
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 6 * * *"
 
-permissions:
-  contents: read
+def get_cheapest(departure_date, return_date):
+    results = search_legs(
+        [
+            SearchLeg(
+                date=departure_date,
+                from_airport="TLV",
+                to_airport="KIX",
+                max_stops=1,
+            ),
+            SearchLeg(
+                date=return_date,
+                from_airport="NRT",
+                to_airport="TLV",
+                max_stops=1,
+            ),
+        ],
+        passengers=Passengers(
+            adults=2,
+            children=0,
+        ),
+        cabin="economy",
+        sort=SORT_CHEAPEST,
+        transport=TransportConfig(
+            country="IL",
+            retries=3,
+        ),
+    )
 
-jobs:
-  check-price:
-    runs-on: ubuntu-latest
+    valid_results = [
+        item for item in results.results
+        if item.price is not None
+    ]
 
-    steps:
-      - name: Download repository
-        uses: actions/checkout@v4
+    if not valid_results:
+        return "No priced results found"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+    cheapest = min(valid_results, key=lambda item: item.price)
+    currency = cheapest.currency or results.currency or ""
 
-      - name: Install Swoop
-        run: pip install .
+    return f"{cheapest.price} {currency}"
 
-      - name: Check Open Jaw price
-        run: |
-          python open_jaw_tracker.py > price.txt
-          cat price.txt
-          test -s price.txt
 
-      - name: Send email
-        env:
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: |
-          python - <<'PY'
-          import os
-          import smtplib
-          from email.message import EmailMessage
-          from pathlib import Path
+price_1_20 = get_cheapest("2027-04-01", "2027-04-20")
+price_3_22 = get_cheapest("2027-04-03", "2027-04-22")
 
-          email_address = "shyshib@gmail.com"
-          body = Path("price.txt").read_text(encoding="utf-8").strip()
-
-          if not body:
-              raise RuntimeError("price.txt is empty")
-
-          message = EmailMessage()
-          message["Subject"] = "Daily Open Jaw flight price"
-          message["From"] = email_address
-          message["To"] = email_address
-          message.set_content(body)
-
-          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-              smtp.login(email_address, os.environ["GMAIL_APP_PASSWORD"])
-              smtp.send_message(message)
-          PY
+print("OPEN JAW FLIGHT PRICE UPDATE")
+print()
+print(f"1 April 2027 -> 20 April 2027: {price_1_20}")
+print(f"3 April 2027 -> 22 April 2027: {price_3_22}")
+print()
+print("Route: TLV -> KIX | NRT -> TLV")
+print("Travellers: 2 adults")
+print("Maximum stops: 1 per direction")
