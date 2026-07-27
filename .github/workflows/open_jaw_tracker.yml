@@ -1,0 +1,25 @@
+name: Open Jaw Price Tracker
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
+
+jobs:
+  check-price:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Swoop
+        run: pip install .
+
+      - name: Check Open Jaw price
+        run: python open_jaw_tracker.py
