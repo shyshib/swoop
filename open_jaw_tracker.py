@@ -1,3 +1,5 @@
+import time
+
 from swoop import (
     Passengers,
     SearchLeg,
@@ -54,12 +56,26 @@ def get_cheapest(departure_date, return_date):
     return f"{cheapest.price} {currency}"
 
 
-price_1_20 = get_cheapest(
+def get_cheapest_with_retry(departure_date, return_date):
+    attempts = 5
+
+    for attempt in range(1, attempts + 1):
+        try:
+            return get_cheapest(departure_date, return_date)
+
+        except Exception as error:
+            if attempt < attempts:
+                time.sleep(15 * attempt)
+            else:
+                return f"ERROR: {type(error).__name__}: {error}"
+
+
+price_1_20 = get_cheapest_with_retry(
     "2027-04-01",
     "2027-04-20",
 )
 
-price_3_22 = get_cheapest(
+price_3_22 = get_cheapest_with_retry(
     "2027-04-03",
     "2027-04-22",
 )
